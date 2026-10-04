@@ -25,7 +25,7 @@ footer{padding:38px 0 55px;border-top:1px solid var(--line);margin-top:40px}.foo
 @media(max-width:760px){
 .navlinks{display:none}.hero{padding-top:58px}.sectionhead{display:block}.sectionhead p{margin-top:12px}.pilot{padding:26px;border-radius:26px}.foot{display:block}.foot div+div{margin-top:8px}
 .carousel{position:relative;overflow:hidden;margin:0 -16px;padding:0 16px}.carousel-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:3px}.carousel-track::-webkit-scrollbar{display:none}
-.carousel-track>.card{flex:0 0 82%;min-width:82%;scroll-snap-align:center}.carousel-track>.demoCard{flex:0 0 88%;min-width:88%;scroll-snap-align:center}
+.carousel-track>.card{flex:0 0 100%;min-width:100%;scroll-snap-align:start}.carousel-track>.demoCard{flex:0 0 100%;min-width:100%;scroll-snap-align:start}
 .indicators{display:flex;justify-content:center;gap:6px;margin-top:13px}.indicator{width:7px;height:7px;border:0;border-radius:999px;padding:0;background:#d1ccc2;transition:all .2s ease}.indicator.active{width:22px}
 .principle .indicator.active{background:#9d8f7b}.projects .indicator.active{background:#718a7b}
 }
@@ -88,23 +88,24 @@ function initCarousel(root){
  const first=items[0].cloneNode(true), last=items[items.length-1].cloneNode(true);
  first.dataset.clone='first'; last.dataset.clone='last';
  track.appendChild(first); track.insertBefore(last,track.firstChild);
- let realIndex=0, ticking=false;
+ let realIndex=0, ticking=false, settleTimer;
  const getStep=()=>items[0].getBoundingClientRect().width + 12;
  const go=(index,behavior='smooth')=>track.scrollTo({left:getStep()*(index+1),behavior});
- requestAnimationFrame(()=>track.scrollLeft=getStep());
- const update=()=>{
+ const updateDots=()=>dots.forEach((d,i)=>d.classList.toggle('active',i===realIndex));
+ const settle=()=>{
    const raw=Math.round(track.scrollLeft/getStep())-1;
-   if(raw<0){track.scrollLeft=getStep()*items.length;realIndex=items.length-1}
-   else if(raw>=items.length){track.scrollLeft=getStep();realIndex=0}
+   if(raw<0){realIndex=items.length-1;track.scrollTo({left:getStep()*items.length,behavior:'instant'});}
+   else if(raw>=items.length){realIndex=0;track.scrollTo({left:getStep(),behavior:'instant'});}
    else realIndex=raw;
-   dots.forEach((d,i)=>d.classList.toggle('active',i===realIndex));
+   updateDots();
  };
+ requestAnimationFrame(()=>{track.scrollLeft=getStep();updateDots();});
  dots.forEach((d,i)=>d.addEventListener('click',()=>go(i)));
  track.addEventListener('scroll',()=>{
    if(ticking)return;ticking=true;
-   requestAnimationFrame(()=>{update();ticking=false});
+   requestAnimationFrame(()=>{const raw=Math.round(track.scrollLeft/getStep())-1;realIndex=Math.max(0,Math.min(items.length-1,raw));updateDots();ticking=false;});
+   clearTimeout(settleTimer);settleTimer=setTimeout(settle,180);
  });
- update();
 }
 document.querySelectorAll('[data-carousel]').forEach(initCarousel);
 })();
