@@ -130,6 +130,9 @@ function initCarousel(root){
    if(e.propertyName==='transform')syncLoop();
  });
 
+root.addEventListener('mouseenter',()=>clearTimeout(autoplayTimer));
+root.addEventListener('mouseleave',startAutoplay);
+
  root.addEventListener('touchstart',e=>{
    if(e.touches.length!==1)return;
    startX=e.touches[0].clientX;
@@ -167,7 +170,10 @@ function initCarousel(root){
 
  function startAutoplay(){
    clearInterval(autoplayTimer);
-   autoplayTimer=setInterval(()=>goTo(index+1,true),3000);
+   autoplayTimer=setTimeout(function advance(){
+     goTo(index+1,true);
+     autoplayTimer=setTimeout(advance,3000);
+   },3000);
  }
 
  requestAnimationFrame(()=>{
