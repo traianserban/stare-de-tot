@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="STARE DE TOT — website-uri simple, rapide și eficiente pentru afaceri reale.">
-<title>STARE DE TOT — Simplu. Rapid. Eficient.</title>
+<meta name="description" content="s tare de tot — website-uri simple, rapide și eficiente pentru afaceri reale.">
+<title>s tare de tot — Simplu. Rapid. Eficient.</title>
 <style>
 :root{--bg:#f5f3ee;--ink:#171717;--muted:#68645d;--card:#fff;--line:#ddd8ce;--radius:24px}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
@@ -32,7 +32,7 @@ footer{padding:38px 0 55px;border-top:1px solid var(--line);margin-top:40px}.foo
 </style>
 </head>
 <body>
-<header><div class="wrap nav"><a class="logo" href="#">STARE DE TOT</a><nav class="navlinks"><a href="#proiecte">Proiecte</a><a href="#pilot">Pilot</a><a href="#principiu">Principiu</a></nav></div></header>
+<header><div class="wrap nav"><a class="logo" href="#">s tare de tot</a><nav class="navlinks"><a href="#proiecte">Proiecte</a><a href="#pilot">Pilot</a><a href="#principiu">Principiu</a></nav></div></header>
 
 <main>
 <section class="hero wrap">
@@ -72,40 +72,50 @@ footer{padding:38px 0 55px;border-top:1px solid var(--line);margin-top:40px}.foo
 
 <section><div class="wrap"><p class="quote">„<b>Dacă îl vezi, știi ce face.</b>”</p></div></section>
 
-<section><div class="wrap">
-<div class="sectionhead"><h2>Mai departe</h2><p>Website-ul este începutul. În timp, aceeași filosofie poate ajunge în programări, clienți, calendar și administrare.</p></div>
-<div class="card"><div class="num">SMART CORE</div><h3>Un singur loc pentru lucrurile importante.</h3><p>Un nucleu simplu, adaptabil diferitelor tipuri de afaceri. Mai întâi îl construim împreună cu utilizatori reali.</p></div>
-</div></section>
 </main>
 
-<footer><div class="wrap foot"><div>STARE DE TOT — proiect în dezvoltare</div><div>Simplu. Rapid. Eficient.</div></div></footer>
+<footer><div class="wrap foot"><div>s tare de tot — proiect în dezvoltare</div><div>Simplu. Rapid. Eficient.</div></div></footer>
 
 <script>
 (function(){
 function initCarousel(root){
- const track=root.querySelector('.carousel-track'), items=[...track.children], dots=[...root.querySelectorAll('.indicator')];
+ const track=root.querySelector('.carousel-track'), dots=[...root.querySelectorAll('.indicator')];
+ let items=[...track.children], index=0, busy=false, timer;
  if(items.length<2)return;
- const first=items[0].cloneNode(true), last=items[items.length-1].cloneNode(true);
- first.dataset.clone='first'; last.dataset.clone='last';
- track.appendChild(first); track.insertBefore(last,track.firstChild);
- let realIndex=0, ticking=false, settleTimer;
- const getStep=()=>items[0].getBoundingClientRect().width + 12;
- const go=(index,behavior='smooth')=>track.scrollTo({left:getStep()*(index+1),behavior});
- const updateDots=()=>dots.forEach((d,i)=>d.classList.toggle('active',i===realIndex));
- const settle=()=>{
-   const raw=Math.round(track.scrollLeft/getStep())-1;
-   if(raw<0){realIndex=items.length-1;track.scrollTo({left:getStep()*items.length,behavior:'instant'});}
-   else if(raw>=items.length){realIndex=0;track.scrollTo({left:getStep(),behavior:'instant'});}
-   else realIndex=raw;
-   updateDots();
+ const gap=12;
+ const step=()=>items[0].getBoundingClientRect().width + gap;
+ const updateDots=()=>dots.forEach((d,i)=>d.classList.toggle('active',i===index));
+ const normalize=()=>{
+   const s=step(), max=track.scrollWidth-track.clientWidth;
+   if(track.scrollLeft >= max-s*0.35){
+     const first=track.firstElementChild;
+     track.appendChild(first);
+     track.scrollLeft-=s;
+     items=[...track.children];
+     index=(index+1)%items.length;
+     updateDots();
+   } else if(track.scrollLeft <= s*0.35){
+     const last=track.lastElementChild;
+     track.insertBefore(last,track.firstElementChild);
+     track.scrollLeft+=s;
+     items=[...track.children];
+     index=(index-1+items.length)%items.length;
+     updateDots();
+   }
  };
- requestAnimationFrame(()=>{track.scrollLeft=getStep();updateDots();});
- dots.forEach((d,i)=>d.addEventListener('click',()=>go(i)));
+ const settle=()=>{busy=false;normalize();};
  track.addEventListener('scroll',()=>{
-   if(ticking)return;ticking=true;
-   requestAnimationFrame(()=>{const raw=Math.round(track.scrollLeft/getStep())-1;realIndex=Math.max(0,Math.min(items.length-1,raw));updateDots();ticking=false;});
-   clearTimeout(settleTimer);settleTimer=setTimeout(settle,180);
+   if(busy)return;
+   busy=true;
+   clearTimeout(timer);
+   timer=setTimeout(settle,140);
  });
+ dots.forEach((d,i)=>d.addEventListener('click',()=>{
+   const current=[...track.children];
+   const target=current[i];
+   if(target) target.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});
+ }));
+ requestAnimationFrame(()=>{track.scrollLeft=0;updateDots();});
 }
 document.querySelectorAll('[data-carousel]').forEach(initCarousel);
 })();
