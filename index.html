@@ -24,8 +24,7 @@ section{padding:54px 0}.sectionhead{display:flex;justify-content:space-between;a
 footer{padding:38px 0 55px;border-top:1px solid var(--line);margin-top:40px}.foot{display:flex;justify-content:space-between;gap:20px;color:var(--muted);font-size:13px}
 @media(max-width:760px){
 .navlinks{display:none}.hero{padding-top:58px}.sectionhead{display:block}.sectionhead p{margin-top:12px}.pilot{padding:26px;border-radius:26px}.foot{display:block}.foot div+div{margin-top:8px}
-.carousel{position:relative;overflow:hidden;margin:0 -16px;padding:0 16px}.carousel-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-ms-overflow-style:none;padding-bottom:3px}.carousel-track::-webkit-scrollbar{display:none}
-.carousel-track>.card{flex:0 0 100%;min-width:100%;scroll-snap-align:start}.carousel-track>.demoCard{flex:0 0 100%;min-width:100%;scroll-snap-align:start}
+.carousel{position:relative;overflow:hidden;margin:0 -16px;padding:0 16px}.carousel-track{display:flex;gap:12px;overflow:visible;padding-bottom:3px;will-change:transform;touch-action:pan-y}.carousel-track>.card{flex:0 0 100%;min-width:100%}.carousel-track>.demoCard{flex:0 0 100%;min-width:100%}
 .indicators{display:flex;justify-content:center;gap:6px;margin-top:13px}.indicator{width:7px;height:7px;border:0;border-radius:999px;padding:0;background:#d1ccc2;transition:all .2s ease}.indicator.active{width:22px}
 .principle .indicator.active{background:#9d8f7b}.projects .indicator.active{background:#718a7b}
 }
@@ -79,43 +78,124 @@ footer{padding:38px 0 55px;border-top:1px solid var(--line);margin-top:40px}.foo
 <script>
 (function(){
 function initCarousel(root){
- const track=root.querySelector('.carousel-track'), dots=[...root.querySelectorAll('.indicator')];
- let items=[...track.children], index=0, busy=false, timer;
- if(items.length<2)return;
+ const track=root.querySelector('.carousel-track');
+ const dots=[...root.querySelectorAll('.indicator')];
+ const realItems=[...track.children];
+ const count=realItems.length;
+ if(count<2)return;
+
+ realItems.forEach(el=>el.dataset.carouselReal="true");
+ const first=realItems[0].cloneNode(true);
+ const last=realItems[count-1].cloneNode(true);
+ first.dataset.carouselClone="first";
+ last.dataset.carouselClone="last";
+ track.insertBefore(last,track.firstChild);
+ track.appendChild(first);
+
+ let index=1;
+ let current=0;
+ let startX=0;
+ let startY=0;
+ let dragging=false;
+ let moved=false;
+ let transition=true;
+
  const gap=12;
- const step=()=>items[0].getBoundingClientRect().width + gap;
- const updateDots=()=>dots.forEach((d,i)=>d.classList.toggle('active',i===index));
- const normalize=()=>{
-   const s=step(), max=track.scrollWidth-track.clientWidth;
-   if(track.scrollLeft >= max-s*0.35){
-     const first=track.firstElementChild;
-     track.appendChild(first);
-     track.scrollLeft-=s;
-     items=[...track.children];
-     index=(index+1)%items.length;
-     updateDots();
-   } else if(track.scrollLeft <= s*0.35){
-     const last=track.lastElementChild;
-     track.insertBefore(last,track.firstElementChild);
-     track.scrollLeft+=s;
-     items=[...track.children];
-     index=(index-1+items.length)%items.length;
-     updateDots();
-   }
+ const getStep=()=>realItems[0].getBoundingClientRect().width+gap;
+ const setTransition=on=>{
+   transition=on;
+   track.style.transition=on ? 'transform .28s ease' : 'none';
  };
- const settle=()=>{busy=false;normalize();};
- track.addEventListener('scroll',()=>{
-   if(busy)return;
-   busy=true;
-   clearTimeout(timer);
-   timer=setTimeout(settle,140);
+ const setPosition=()=>{
+   track.style.transform='translate3d('+(-index*getStep())+'px,0,0)';
+ };
+ const updateDots=()=>dots.forEach((d,i)=>d.classList.toggle('active',i===current));
+
+ const goTo=(target,animate=true)=>{
+   index=target;
+   setTransition(animate);
+   setPosition();
+ };
+
+ const syncLoop=()=>{
+   if(index===count+1){
+     index=1;
+     setTransition(false);
+     setPosition();
+     requestAnimationFrame(()=>requestAnimationFrame(()=>setTransition(true)));
+   } else if(index===0){
+     index=count;
+     setTransition(false);
+     setPosition();
+     requestAnimationFrame(()=>requestAnimationFrame(()=>setTransition(true)));
+   }
+   current=(index-1+count)%count;
+   updateDots();
+ };
+
+ track.addEventListener('transitionend',e=>{
+   if(e.propertyName==='transform')syncLoop();
  });
+
+ root.addEventListener('touchstart',e=>{
+   if(e.touches.length!==1)return;
+   startX=e.touches[0].clientX;
+   startY=e.touches[0].clientY;
+   dragging=true;
+   moved=false;
+   setTransition(false);
+ },{passive:true});
+
+ root.addEventListener('touchmove',e=>{
+   if(!dragging)return;
+   const x=e.touches[0].clientX;
+   const y=e.touches[0].clientY;
+   const dx=x-startX;
+   const dy=y-startY;
+   if(Math.abs(dy)>Math.abs(dx)+8){
+     dragging=false;
+     setTransition(true);
+     return;
+   }
+   if(Math.abs(dx)>8)moved=true;
+   if(moved){
+     e.preventDefault();
+     track.style.transform='translate3d('+(-index*getStep()+dx)+'px,0,0)';
+   }
+ },{passive:false});
+
+ root.addEventListener('touchend',e=>{
+   if(!dragging)return;
+   dragging=false;
+   const dx=e.changedTouches[0].clientX-startX;
+   const threshold=Math.min(70,getStep()*0.18);
+   setTransition(true);
+   if(Math.abs(dx)>=threshold){
+     goTo(index+(dx<0?1:-1),true);
+   }else{
+     setPosition();
+   }
+ });
+
  dots.forEach((d,i)=>d.addEventListener('click',()=>{
-   const current=[...track.children];
-   const target=current[i];
-   if(target) target.scrollIntoView({behavior:'smooth',block:'nearest',inline:'start'});
+   if(i===current)return;
+   goTo(i+1,true);
  }));
- requestAnimationFrame(()=>{track.scrollLeft=0;updateDots();});
+
+ const onResize=()=>{
+   setTransition(false);
+   setPosition();
+   requestAnimationFrame(()=>setTransition(true));
+ };
+ window.addEventListener('resize',onResize);
+
+ requestAnimationFrame(()=>{
+   setTransition(false);
+   setPosition();
+   current=0;
+   updateDots();
+   requestAnimationFrame(()=>setTransition(true));
+ });
 }
 document.querySelectorAll('[data-carousel]').forEach(initCarousel);
 })();
