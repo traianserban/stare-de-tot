@@ -184,10 +184,13 @@ function initCarousel(root){
 document.querySelectorAll('[data-carousel]').forEach(initCarousel);
 const titleWords=[...document.querySelectorAll('.hero h1 .word')];
 if(titleWords.length){
-  const clampMove=()=>Math.max(70,Math.min(220,window.innerWidth*.18));
   const states=titleWords.map((el,i)=>({el,x:0,y:0,tx:0,ty:0,next:performance.now()+400+i*220}));
   const choose=state=>{
-    state.tx=(Math.random()*2-1)*clampMove()*1.25;
+    const area=state.el.parentElement.getBoundingClientRect();
+    const word=state.el.getBoundingClientRect();
+    const minX=Math.min(110,Math.max(25,area.width*.16));
+    const maxX=Math.max(minX,area.width-word.width-20);
+    state.tx=minX+Math.random()*(maxX-minX);
     state.ty=(Math.random()*2-1)*34;
     state.next=performance.now()+1100+Math.random()*1500;
   };
