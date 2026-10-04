@@ -187,7 +187,7 @@ if(titleWords.length){
   const clampMove=()=>Math.max(70,Math.min(220,window.innerWidth*.18));
   const states=titleWords.map((el,i)=>({el,x:0,y:0,tx:0,ty:0,next:performance.now()+400+i*220}));
   const choose=state=>{
-    state.tx=(Math.random()*.75+.25)*clampMove();
+    state.tx=(Math.random()*.35+.65)*clampMove();
     state.ty=(Math.random()*2-1)*34;
     state.next=performance.now()+1100+Math.random()*1500;
   };
